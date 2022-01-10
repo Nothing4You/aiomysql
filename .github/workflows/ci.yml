@@ -23,19 +23,19 @@ jobs:
           - ubuntu-latest
         py:
           - '3.7'
-          - '3.8'
-          - '3.9'
+          # - '3.8'
+          # - '3.9'
           # - '3.10'
           # - '3.11.0-alpha.3'
         db:
           - 'mysql:5.7'
           - 'mysql:8.0'
-          - 'mariadb:10.2'
-          - 'mariadb:10.3'
-          - 'mariadb:10.4'
-          - 'mariadb:10.5'
-          - 'mariadb:10.6'
-          - 'mariadb:10.7'
+          # - 'mariadb:10.2'
+          # - 'mariadb:10.3'
+          # - 'mariadb:10.4'
+          # - 'mariadb:10.5'
+          # - 'mariadb:10.6'
+          # - 'mariadb:10.7'
 
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -126,7 +126,7 @@ jobs:
 
         # timeout ensures a more or less clean stop by sending a KeyboardInterrupt which will still provide useful logs
         timeout --preserve-status --signal=INT --verbose 5m \
-          pytest --color=yes --capture=no --verbosity 2 --cov-report term --cov-report xml --cov  aiomysql ./tests
+          pytest -r a --color=yes --capture=no --verbosity 2 --cov-report term --cov-report xml --cov  aiomysql ./tests
       env:
         PYTHONUNBUFFERED: 1
         MATRIX_DB: '${{ matrix.db }}'
