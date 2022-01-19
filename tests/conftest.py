@@ -27,6 +27,48 @@ def pytest_generate_tests(metafunc):
         loop_type = ['asyncio', 'uvloop'] if uvloop else ['asyncio']
         metafunc.parametrize("loop_type", loop_type)
 
+    if "mysql_address" in metafunc.fixturenames:
+        mysql_addresses = []
+        ids = []
+
+        opt_mysql_unix_socket = \
+            list(metafunc.config.getoption("mysql_unix_socket"))
+        for i in range(len(opt_mysql_unix_socket)):
+            if "=" in opt_mysql_unix_socket[i]:
+                label, path = opt_mysql_unix_socket[i].rsplit("=", 1)
+                mysql_addresses.append(path)
+                ids.append(label)
+            else:
+                mysql_addresses.append(opt_mysql_unix_socket[i])
+                ids.append("socket{}".format(i))
+
+        opt_mysql_address = list(metafunc.config.getoption("mysql_address"))
+        for i in range(len(opt_mysql_address)):
+            if "=" in opt_mysql_address[i]:
+                label, addr = opt_mysql_unix_socket[i].rsplit("=", 1)
+                ids.append(label)
+            else:
+                addr = opt_mysql_address[i]
+                ids.append("socket{}".format(i))
+
+            if ":" in addr:
+                addr = addr.rsplit(":", 1)
+                mysql_addresses.append((addr[0], int(addr[1])))
+            else:
+                mysql_addresses.append((addr, 3306))
+            ids.append("address{}".format(i))
+
+        # default to connecting to localhost
+        if len(mysql_addresses) == 0:
+            mysql_addresses = [("127.0.0.1", 3306)]
+            ids = ["tcp-local"]
+
+        metafunc.parametrize("mysql_address",
+                             mysql_addresses,
+                             ids=ids,
+                             scope="session",
+                             )
+
 
 # This is here unless someone fixes the generate_tests bit
 @pytest.fixture(scope='session')
@@ -98,6 +140,21 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "mysql_version(db, version): run only on specific database versions"
+    )
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--mysql-address",
+        action="append",
+        default=[],
+        help="list of addresses to connect to",
+    )
+    parser.addoption(
+        "--mysql-unix-socket",
+        action="append",
+        default=[],
+        help="list of unix sockets to connect to",
     )
 
 
@@ -209,23 +266,30 @@ def ensure_mysql_version(request, mysql_image, mysql_tag):
 
 
 @pytest.fixture(scope='session')
-def mysql_server(mysql_image, mysql_tag):
-    ssl_directory = os.path.join(os.path.dirname(__file__),
-                                 'ssl_resources', 'ssl')
-    ca_file = os.path.join(ssl_directory, 'ca.pem')
+def mysql_server(mysql_image, mysql_tag, mysql_address):
+    unix_socket = type(mysql_address) is str
 
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-    ctx.check_hostname = False
-    ctx.load_verify_locations(cafile=ca_file)
-    # ctx.verify_mode = ssl.CERT_NONE
+    if not unix_socket:
+        ssl_directory = os.path.join(os.path.dirname(__file__),
+                                     'ssl_resources', 'ssl')
+        ca_file = os.path.join(ssl_directory, 'ca.pem')
+
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        ctx.check_hostname = False
+        ctx.load_verify_locations(cafile=ca_file)
+        # ctx.verify_mode = ssl.CERT_NONE
 
     server_params = {
-        'host': '127.0.0.1',
-        'port': 3306,
         'user': 'root',
         'password': os.environ.get("MYSQL_ROOT_PASSWORD"),
-        'ssl': ctx,
     }
+
+    if unix_socket:
+        server_params["unix_socket"] = mysql_address
+    else:
+        server_params["host"] = mysql_address[0]
+        server_params["port"] = mysql_address[1]
+        server_params["ssl"] = ctx
 
     try:
         connection = pymysql.connect(
@@ -235,21 +299,22 @@ def mysql_server(mysql_image, mysql_tag):
             **server_params)
 
         with connection.cursor() as cursor:
-            cursor.execute("SHOW VARIABLES LIKE '%ssl%';")
+            if not unix_socket:
+                cursor.execute("SHOW VARIABLES LIKE '%ssl%';")
 
-            result = cursor.fetchall()
-            result = {item['Variable_name']:
-                      item['Value'] for item in result}
+                result = cursor.fetchall()
+                result = {item['Variable_name']:
+                          item['Value'] for item in result}
 
-            assert result['have_ssl'] == "YES", \
-                "SSL Not Enabled on MySQL"
+                assert result['have_ssl'] == "YES", \
+                    "SSL Not Enabled on MySQL"
 
-            cursor.execute("SHOW STATUS LIKE 'Ssl_version%'")
+                cursor.execute("SHOW STATUS LIKE 'Ssl_version%'")
 
-            result = cursor.fetchone()
-            # As we connected with TLS, it should start with that :D
-            assert result['Value'].startswith('TLS'), \
-                "Not connected to the database with TLS"
+                result = cursor.fetchone()
+                # As we connected with TLS, it should start with that :D
+                assert result['Value'].startswith('TLS'), \
+                    "Not connected to the database with TLS"
 
             # Drop possibly existing old databases
             cursor.execute('DROP DATABASE IF EXISTS test_pymysql;')
