@@ -40,28 +40,31 @@ def pytest_generate_tests(metafunc):
                 ids.append(label)
             else:
                 mysql_addresses.append(opt_mysql_unix_socket[i])
-                ids.append("socket{}".format(i))
+                ids.append("unix{}".format(i))
 
         opt_mysql_address = list(metafunc.config.getoption("mysql_address"))
         for i in range(len(opt_mysql_address)):
             if "=" in opt_mysql_address[i]:
-                label, addr = opt_mysql_unix_socket[i].rsplit("=", 1)
+                label, addr = opt_mysql_address[i].rsplit("=", 1)
                 ids.append(label)
             else:
                 addr = opt_mysql_address[i]
-                ids.append("socket{}".format(i))
+                ids.append("tcp{}".format(i))
 
             if ":" in addr:
                 addr = addr.rsplit(":", 1)
                 mysql_addresses.append((addr[0], int(addr[1])))
             else:
                 mysql_addresses.append((addr, 3306))
-            ids.append("address{}".format(i))
 
         # default to connecting to localhost
         if len(mysql_addresses) == 0:
             mysql_addresses = [("127.0.0.1", 3306)]
             ids = ["tcp-local"]
+
+        assert len(mysql_addresses) == len(set(mysql_addresses))
+        assert len(ids) == len(set(ids))
+        assert len(mysql_addresses) == len(ids)
 
         metafunc.parametrize("mysql_address",
                              mysql_addresses,
