@@ -126,6 +126,7 @@ jobs:
       env:
         PYTHONUNBUFFERED: 1
         MATRIX_DB: '${{ matrix.db }}'
+        COLUMNS: 150
       timeout-minutes: 6
 
     - name: Build coverage flag
