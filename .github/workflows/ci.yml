@@ -16,6 +16,20 @@ concurrency:
 jobs:
   test:
     name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        attempt:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
     runs-on: ubuntu-latest
 
     steps:
