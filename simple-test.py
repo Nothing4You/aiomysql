@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import logging
 
 
 async def test_async():
@@ -9,5 +11,17 @@ async def test_async():
     await writer.wait_closed()
 
 
-loop = asyncio.new_event_loop()
-loop.run_until_complete(test_async())
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)8s - %(name)s:%(funcName)s - %(message)s",
+)
+
+logging.Formatter.formatTime = (
+    lambda self, record, datefmt: datetime.datetime.fromtimestamp(
+        record.created, datetime.timezone.utc
+    )
+    .astimezone()
+    .isoformat()
+)
+
+asyncio.run(test_async(), debug=True)

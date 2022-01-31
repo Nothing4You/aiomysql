@@ -1,12 +1,14 @@
 import asyncio
-import sys
+import datetime
+import logging
 
 import aiomysql
 
 
 async def test_async():
     conn = await aiomysql.connect(
-        unix_socket=sys.argv[1],
+        host="127.0.0.1",
+        port=3306,
         user='root',
         password='rootpw',
         db='mysql'
@@ -20,5 +22,17 @@ async def test_async():
     conn.close()
 
 
-loop = asyncio.new_event_loop()
-loop.run_until_complete(test_async())
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)8s - %(name)s:%(funcName)s - %(message)s",
+)
+
+logging.Formatter.formatTime = (
+    lambda self, record, datefmt: datetime.datetime.fromtimestamp(
+        record.created, datetime.timezone.utc
+    )
+    .astimezone()
+    .isoformat()
+)
+
+asyncio.run(test_async(), debug=True)

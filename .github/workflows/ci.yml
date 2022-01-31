@@ -125,7 +125,11 @@ jobs:
     - name: Try simple socket connection in asyncio
       run: |
         coverage run simple-test.py
+      env:
+        PYTHONUNBUFFERED: 1
 
     - name: Try simple socket connection in aiomysql
       run: |
         coverage run aiomysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
+      env:
+        PYTHONUNBUFFERED: 1
