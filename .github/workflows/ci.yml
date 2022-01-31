@@ -65,7 +65,13 @@ jobs:
     #  env:
     #    PYTHONUNBUFFERED: 1
 
-    - name: Try simple socket connection in aiomysql
+    - name: Test without coverage
+      run: |
+        python aiomysql-sockettest.py
+      env:
+        PYTHONUNBUFFERED: 1
+
+    - name: Test with coverage
       run: |
         coverage run aiomysql-sockettest.py
       env:
