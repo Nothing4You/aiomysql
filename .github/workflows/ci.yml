@@ -67,7 +67,7 @@ jobs:
 
     - name: Test without coverage
       run: |
-        python aiomysql-sockettest.py
+        python atest.py
       env:
         PYTHONUNBUFFERED: 1
 
