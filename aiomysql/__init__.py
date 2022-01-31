@@ -30,7 +30,6 @@ from pymysql.err import (Warning, Error, InterfaceError, DataError,
                          NotSupportedError, ProgrammingError, MySQLError)
 
 from .connection import Connection, connect
-from .cursors import Cursor, SSCursor, DictCursor, SSDictCursor
 
 __version__ = '0.0.22'
 
@@ -55,11 +54,6 @@ __all__ = [
 
     'Connection',
     'connect',
-    'Cursor',
-    'SSCursor',
-    'DictCursor',
-    'SSDictCursor'
 ]
 
-(Connection, connect, Cursor, SSCursor, DictCursor,
- SSDictCursor)  # pyflakes
+(Connection, connect)  # pyflakes
