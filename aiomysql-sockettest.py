@@ -1,2 +1,1 @@
-#import aiomysql
-import asyncio
+import aiomysql
