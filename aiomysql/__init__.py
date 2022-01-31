@@ -23,7 +23,6 @@ THE SOFTWARE.
 
 """
 
-from pymysql.converters import escape_dict, escape_sequence, escape_string
 from pymysql.err import (Warning, Error, InterfaceError, DataError,
                          DatabaseError, OperationalError, IntegrityError,
                          InternalError,
@@ -45,8 +44,4 @@ __all__ = [
     'OperationalError',
     'ProgrammingError',
     'Warning',
-
-    'escape_dict',
-    'escape_sequence',
-    'escape_string',
 ]
