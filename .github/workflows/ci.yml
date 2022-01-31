@@ -87,10 +87,6 @@ jobs:
       run: |
         python -m pip install .
 
-    - name: Try simple socket connection
-      run: |
-        python sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
-
     # this ensures our database is ready. typically by the time the preparations have completed its first start logic.
     # unfortunately we need this hacky workaround as GitHub Actions service containers can't reference data from our repo.
     - name: Prepare mysql
@@ -129,6 +125,10 @@ jobs:
         done
 
         mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
+
+    - name: Try simple socket connection
+      run: |
+        python sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
 
     - name: Run tests
       run: |
