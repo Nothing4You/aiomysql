@@ -22,10 +22,6 @@ jobs:
         os:
           - ubuntu-latest
         py:
-          #- '3.7'
-          #- '3.8'
-          #- '3.9'
-          #- '3.10'
           - '3.11-dev'
         db:
           - [mysql, '5.7']
@@ -126,21 +122,10 @@ jobs:
 
         mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
 
-    - name: Try simple socket connection
+    - name: Try simple socket connection in pymysql
       run: |
-        coverage run sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
+        coverage run pymysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
 
-    - name: Run tests
+    - name: Try simple socket connection in aiomysql
       run: |
-        # timeout ensures a more or less clean stop by sending a KeyboardInterrupt which will still provide useful logs
-        # timeout --preserve-status --signal=INT --verbose 5m \
-        pytest --color=yes --capture=no --verbosity 2 --cov-report term --cov-report xml --cov aiomysql --cov tests ./tests --mysql-address "tcp-${{ join(matrix.db, '') }}=127.0.0.1:3306"
-      env:
-        PYTHONUNBUFFERED: 1
-      timeout-minutes: 6
-      #continue-on-error: true
-
-    #- name: Debugging with ssh
-    #  uses: lhotari/action-upterm@v1
-    #  with:
-    #    limit-access-to-users: Nothing4You
+        coverage run aiomysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
