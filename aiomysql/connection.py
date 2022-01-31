@@ -56,7 +56,6 @@ def connect(host="localhost", user=None, password="",
             program_name='', server_public_key=None):
     """See connections.Connection.__init__() for information about
     defaults."""
-    return
     coro = _connect(host=host, user=user, password=password, db=db,
                     port=port, unix_socket=unix_socket, charset=charset,
                     sql_mode=sql_mode, read_default_file=read_default_file,
