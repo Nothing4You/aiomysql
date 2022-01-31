@@ -83,6 +83,12 @@ jobs:
       run: |
         python -m pip install --upgrade --requirement requirements-dev.txt
 
+    - name: try pytest
+      run: |
+        pytest --help
+      env:
+        PYTHONUNBUFFERED: 1
+
     - name: Install aiomysql
       run: |
         python -m pip install .
