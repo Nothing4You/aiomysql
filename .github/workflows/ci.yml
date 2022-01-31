@@ -16,40 +16,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    strategy:
-      matrix:
-        # service containers are only supported on ubuntu currently
-        os:
-          - ubuntu-latest
-        py:
-          - '3.11-dev'
-        db:
-          - [mysql, '5.7']
-          - [mysql, '8.0']
-          - [mariadb, '10.2']
-          - [mariadb, '10.3']
-          - [mariadb, '10.4']
-          - [mariadb, '10.5']
-          - [mariadb, '10.6']
-          - [mariadb, '10.7']
-
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-
-    env:
-      MYSQL_ROOT_PASSWORD: rootpw
-
-    services:
-      mysql:
-        image: "${{ join(matrix.db, ':') }}"
-        ports:
-          - 3306:3306
-        volumes:
-          - "/tmp/run-${{ join(matrix.db, '-') }}/:/socket-mount/"
-        options: '--name=mysqld'
-        env:
-          MYSQL_ROOT_PASSWORD: rootpw
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
@@ -58,74 +25,17 @@ jobs:
     - name: Setup Python ${{ matrix.py }}
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.py }}
+        python-version: '3.11-dev'
 
-    - name: Get pip cache dir
-      id: pip-cache
+    - name: Install coverage.py
       run: |
-        echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+        python -m pip install coverage==6.3
 
-    - name: Cache PyPI
-      uses: actions/cache@v2.1.7
-      with:
-        key: pip-ci-${{ runner.os }}-${{ matrix.py }}
-        path: ${{ steps.pip-cache.outputs.dir }}
 
-    - name: Update pip, wheel, setuptools, build, twine
+    - name: Try simple socket connection
       run: |
-        python -m pip install -U pip wheel setuptools build twine
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade --requirement requirements-dev.txt
-
-    - name: Install aiomysql
-      run: |
-        python -m pip install .
-
-    # this ensures our database is ready. typically by the time the preparations have completed its first start logic.
-    # unfortunately we need this hacky workaround as GitHub Actions service containers can't reference data from our repo.
-    - name: Prepare mysql
-      run: |
-        # ensure server is started up
-        while :
+        for i in $(seq 60)
         do
-            sleep 1
-            mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
+            echo attempt $i
+            coverage run simple-test.py
         done
-
-        # inject tls configuration
-        docker container stop mysqld
-        docker container cp "${{ github.workspace }}/tests/ssl_resources/ssl" mysqld:/etc/mysql/ssl
-        docker container cp "${{ github.workspace }}/tests/ssl_resources/tls.cnf" mysqld:/etc/mysql/conf.d/aiomysql-tls.cnf
-
-        # use custom socket path
-        # we need to ensure that the socket path is writable for the user running the DB process in the container
-        sudo chmod 0777 /tmp/run-${{ join(matrix.db, '-') }}
-
-        # mysql 5.7 container overrides the socket path in /etc/mysql/mysql.conf.d/mysqld.cnf
-        if [ "${{ join(matrix.db, '-') }}" = "mysql-5.7" ]
-        then
-          docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" mysqld:/etc/mysql/mysql.conf.d/zz-aiomysql-socket.cnf
-        else
-          docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" mysqld:/etc/mysql/conf.d/aiomysql-socket.cnf
-        fi
-
-        docker container start mysqld
-
-        # ensure server is started up
-        while :
-        do
-            sleep 1
-            mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
-        done
-
-        mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
-
-    - name: Try simple socket connection in pymysql
-      run: |
-        coverage run pymysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
-
-    - name: Try simple socket connection in aiomysql
-      run: |
-        coverage run aiomysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
