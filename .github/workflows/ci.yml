@@ -138,9 +138,9 @@ jobs:
       env:
         PYTHONUNBUFFERED: 1
       timeout-minutes: 6
-      continue-on-error: true
+      #continue-on-error: true
 
-    - name: Debugging with ssh
-      uses: lhotari/action-upterm@v1
-      with:
-        limit-access-to-users: Nothing4You
+    #- name: Debugging with ssh
+    #  uses: lhotari/action-upterm@v1
+    #  with:
+    #    limit-access-to-users: Nothing4You
