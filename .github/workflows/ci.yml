@@ -73,6 +73,6 @@ jobs:
 
     - name: Test with coverage
       run: |
-        coverage run aiomysql-sockettest.py
+        coverage run atest.py
       env:
         PYTHONUNBUFFERED: 1
