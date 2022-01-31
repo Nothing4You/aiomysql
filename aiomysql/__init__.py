@@ -29,8 +29,6 @@ from pymysql.err import (Warning, Error, InterfaceError, DataError,
                          InternalError,
                          NotSupportedError, ProgrammingError, MySQLError)
 
-from .connection import Connection, connect
-
 __version__ = '0.0.22'
 
 __all__ = [
@@ -51,9 +49,4 @@ __all__ = [
     'escape_dict',
     'escape_sequence',
     'escape_string',
-
-    'Connection',
-    'connect',
 ]
-
-(Connection, connect)  # pyflakes
