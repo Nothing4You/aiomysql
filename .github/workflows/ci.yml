@@ -137,7 +137,6 @@ jobs:
       continue-on-error: true
 
     - name: Debugging with ssh
-      if: ${{ failure() }}
       uses: lhotari/action-upterm@v1
       with:
         limit-access-to-users: Nothing4You
