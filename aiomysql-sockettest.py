@@ -30,4 +30,4 @@ logging.Formatter.formatTime = (
     .isoformat()
 )
 
-asyncio.run(test_async(), debug=True)
+#asyncio.run(test_async(), debug=True)
