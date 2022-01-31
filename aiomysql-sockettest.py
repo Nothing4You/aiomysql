@@ -14,12 +14,6 @@ async def test_async():
         db='mysql'
     )
 
-    async with conn.cursor() as cur:
-        pass
-        #await cur.execute("select 1")
-        #r = await cur.fetchone()
-        #print(f"{r=}")
-
     conn.close()
 
 
