@@ -83,19 +83,9 @@ jobs:
       run: |
         python -m pip install --upgrade --requirement requirements-dev.txt
 
-    - name: try pytest
-      run: |
-        pytest --help
-      env:
-        PYTHONUNBUFFERED: 1
-
     - name: Install aiomysql
       run: |
         python -m pip install .
-
-    - name: Check rst
-      run: |
-        python setup.py check --restructuredtext
 
     # this ensures our database is ready. typically by the time the preparations have completed its first start logic.
     # unfortunately we need this hacky workaround as GitHub Actions service containers can't reference data from our repo.
@@ -144,10 +134,10 @@ jobs:
       env:
         PYTHONUNBUFFERED: 1
       timeout-minutes: 6
+      continue-on-error: true
 
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
+    - name: Debugging with ssh
+      if: ${{ failure() }}
+      uses: lhotari/action-upterm@v1
       with:
-        file: ./coverage.xml
-        flags: "${{ matrix.os }}_${{ matrix.py }}_${{ join(matrix.db, '-') }}"
-        fail_ci_if_error: true
+        limit-access-to-users: Nothing4You
