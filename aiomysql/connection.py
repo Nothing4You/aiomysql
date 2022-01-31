@@ -534,8 +534,6 @@ class Connection:
                 self._set_nodelay(True)
                 self.host_info = "socket %s:%d" % (self._host, self._port)
 
-            return
-
             self._next_seq_id = 0
 
             await self._get_server_information()
