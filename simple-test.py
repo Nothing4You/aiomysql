@@ -12,10 +12,20 @@ def set_keep_alive(writer):
     transport.resume_reading()
 
 
+def set_nodelay(writer, value):
+    flag = int(bool(value))
+    transport = writer.transport
+    transport.pause_reading()
+    raw_sock = transport.get_extra_info('socket', default=None)
+    raw_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, flag)
+    transport.resume_reading()
+
+
 async def test_async():
     reader, writer = await asyncio.open_connection("127.0.0.1", 3306)
 
     set_keep_alive(writer)
+    set_nodelay(writer, True)
 
     b = await reader.readexactly(1)
     print(f"read 1 byte: {b=}")
