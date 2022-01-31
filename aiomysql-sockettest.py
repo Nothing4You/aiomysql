@@ -15,9 +15,10 @@ async def test_async():
     )
 
     async with conn.cursor() as cur:
-        await cur.execute("select 1")
-        r = await cur.fetchone()
-        print(f"{r=}")
+        pass
+        #await cur.execute("select 1")
+        #r = await cur.fetchone()
+        #print(f"{r=}")
 
     conn.close()
 

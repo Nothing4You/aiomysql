@@ -7,6 +7,7 @@ async def test_async():
     reader, writer = await asyncio.open_connection("127.0.0.1", 3306)
     b = await reader.readexactly(1)
     print(f"read 1 byte: {b=}")
+    writer.write(bytes(0))
     writer.close()
     await writer.wait_closed()
 
