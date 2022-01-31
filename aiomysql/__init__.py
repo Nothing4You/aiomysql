@@ -23,25 +23,7 @@ THE SOFTWARE.
 
 """
 
-from pymysql.err import (Warning, Error, InterfaceError, DataError,
-                         DatabaseError, OperationalError, IntegrityError,
-                         InternalError,
-                         NotSupportedError, ProgrammingError, MySQLError)
-
 __version__ = '0.0.22'
 
 __all__ = [
-
-    # Errors
-    'Error',
-    'DataError',
-    'DatabaseError',
-    'IntegrityError',
-    'InterfaceError',
-    'InternalError',
-    'MySQLError',
-    'NotSupportedError',
-    'OperationalError',
-    'ProgrammingError',
-    'Warning',
 ]
