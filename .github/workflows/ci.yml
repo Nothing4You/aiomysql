@@ -122,9 +122,9 @@ jobs:
 
         mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
 
-    - name: Try simple socket connection in pymysql
+    - name: Try simple socket connection in asyncio
       run: |
-        coverage run pymysql-sockettest.py /tmp/run-${{ join(matrix.db, '-') }}/mysql.sock
+        coverage run simple-test.py
 
     - name: Try simple socket connection in aiomysql
       run: |
