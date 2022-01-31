@@ -9,7 +9,7 @@ from pymysql.err import (
     NotSupportedError, ProgrammingError)
 
 from .log import logger
-from .connection import FIELD_TYPE
+from pymysql.constants import FIELD_TYPE
 
 # https://github.com/PyMySQL/PyMySQL/blob/master/pymysql/cursors.py#L11-L18
 
