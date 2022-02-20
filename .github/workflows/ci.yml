@@ -27,31 +27,85 @@ jobs:
           - '3.9'
           - '3.10'
           - '3.11-dev'
-        db:
-          - [mysql, '5.7']
-          - [mysql, '8.0']
-          - [mariadb, '10.2']
-          - [mariadb, '10.3']
-          - [mariadb, '10.4']
-          - [mariadb, '10.5']
-          - [mariadb, '10.6']
-          - [mariadb, '10.7']
 
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     env:
       MYSQL_ROOT_PASSWORD: rootpw
 
     services:
-      mysql:
-        image: "${{ join(matrix.db, ':') }}"
+      mysql57:
+        image: "mysql:5.7"
         ports:
           - 3306:3306
         volumes:
-          - "/tmp/run-${{ join(matrix.db, '-') }}/:/socket-mount/"
-        options: '--name=mysqld'
+          - "/tmp/run-mysql57/:/socket-mount/"
+        options: '--name=mysql57'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mysql80:
+        image: "mysql:8.0"
+        ports:
+          - 3307:3306
+        volumes:
+          - "/tmp/run-mysql80/:/socket-mount/"
+        options: '--name=mysql80'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb102:
+        image: "mariadb:10.2"
+        ports:
+          - 3308:3306
+        volumes:
+          - "/tmp/run-mariadb102/:/socket-mount/"
+        options: '--name=mariadb102'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb103:
+        image: "mariadb:10.3"
+        ports:
+          - 3309:3306
+        volumes:
+          - "/tmp/run-mariadb103/:/socket-mount/"
+        options: '--name=mariadb103'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb104:
+        image: "mariadb:10.4"
+        ports:
+          - 3310:3306
+        volumes:
+          - "/tmp/run-mariadb104/:/socket-mount/"
+        options: '--name=mariadb104'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb105:
+        image: "mariadb:10.5"
+        ports:
+          - 3311:3306
+        volumes:
+          - "/tmp/run-mariadb105/:/socket-mount/"
+        options: '--name=mariadb105'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb106:
+        image: "mariadb:10.6"
+        ports:
+          - 3312:3306
+        volumes:
+          - "/tmp/run-mariadb106/:/socket-mount/"
+        options: '--name=mariadb106'
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+      mariadb107:
+        image: "mariadb:10.7"
+        ports:
+          - 3313:3306
+        volumes:
+          - "/tmp/run-mariadb107/:/socket-mount/"
+        options: '--name=mariadb107'
         env:
           MYSQL_ROOT_PASSWORD: rootpw
 
@@ -95,53 +149,81 @@ jobs:
     # unfortunately we need this hacky workaround as GitHub Actions service containers can't reference data from our repo.
     - name: Prepare mysql
       run: |
-        # ensure server is started up
-        while :
+        declare -A DATABASES=(
+            [mysql57]=3306
+            [mysql80]=3307
+            [mariadb102]=3308
+            [mariadb103]=3309
+            [mariadb104]=3310
+            [mariadb105]=3311
+            [mariadb106]=3312
+            [mariadb107]=3313
+        )
+
+        PYTEST_CONNECTION_ARGS=""
+
+        for db in "${!DATABASES[@]}"
         do
-            sleep 1
-            mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
+            # add connection argument for pytest
+            PYTEST_CONNECTION_ARGS="$PYTEST_CONNECTION_ARGS --mysql-unix-socket unix-$db=/tmp/run-$db/mysql.sock --mysql-address tcp-$db=127.0.0.1:${DATABASES[$db]}"
+
+            # ensure server is started up
+            while :
+            do
+                mysql -h127.0.0.1 "-P${DATABASES[$db]}" -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
+                sleep 1
+            done
         done
 
-        # inject tls configuration
-        docker container stop mysqld
-        docker container cp "${{ github.workspace }}/tests/ssl_resources/ssl" mysqld:/etc/mysql/ssl
-        docker container cp "${{ github.workspace }}/tests/ssl_resources/tls.cnf" mysqld:/etc/mysql/conf.d/aiomysql-tls.cnf
+        echo "PYTEST_CONNECTION_ARGS=$PYTEST_CONNECTION_ARGS" >> "$GITHUB_ENV"
 
-        # use custom socket path
-        # we need to ensure that the socket path is writable for the user running the DB process in the container
-        sudo chmod 0777 /tmp/run-${{ join(matrix.db, '-') }}
-
-        # mysql 5.7 container overrides the socket path in /etc/mysql/mysql.conf.d/mysqld.cnf
-        if [ "${{ join(matrix.db, '-') }}" = "mysql-5.7" ]
-        then
-          docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" mysqld:/etc/mysql/mysql.conf.d/zz-aiomysql-socket.cnf
-        else
-          docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" mysqld:/etc/mysql/conf.d/aiomysql-socket.cnf
-        fi
-
-        docker container start mysqld
-
-        # ensure server is started up
-        while :
+        for db in "${!DATABASES[@]}"
         do
-            sleep 1
-            mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
+            # inject tls configuration
+            docker container stop "$db"
+            docker container cp "${{ github.workspace }}/tests/ssl_resources/ssl" "$db:/etc/mysql/ssl"
+            docker container cp "${{ github.workspace }}/tests/ssl_resources/tls.cnf" "$db:/etc/mysql/conf.d/aiomysql-tls.cnf"
+
+            # use custom socket path
+            # we need to ensure that the socket path is writable for the user running the DB process in the container
+            sudo chmod 0777 "/tmp/run-$db"
+
+            # mysql 5.7 container overrides the socket path in /etc/mysql/mysql.conf.d/mysqld.cnf
+            if [ "$db" = "mysql57" ]
+            then
+              docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" "$db:/etc/mysql/mysql.conf.d/zz-aiomysql-socket.cnf"
+            else
+              docker container cp "${{ github.workspace }}/tests/ssl_resources/socket.cnf" "$db:/etc/mysql/conf.d/aiomysql-socket.cnf"
+            fi
+
+            docker container start "$db"
         done
 
-        mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
+        for db in "${!DATABASES[@]}"
+        do
+            # ensure server is started up
+            while :
+            do
+                mysql -h127.0.0.1 "-P${DATABASES[$db]}" -uroot "-p$MYSQL_ROOT_PASSWORD" -e 'select version()' && break
+                sleep 1
+            done
+
+            mysql -h127.0.0.1 "-P${DATABASES[$db]}" -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
+        done
 
     - name: Run tests
       run: |
         # timeout ensures a more or less clean stop by sending a KeyboardInterrupt which will still provide useful logs
-        timeout --preserve-status --signal=INT --verbose 5m \
-          pytest --color=yes --capture=no --verbosity 2 --cov-report term --cov-report xml --cov aiomysql --cov tests ./tests --mysql-unix-socket "unix-${{ join(matrix.db, '') }}=/tmp/run-${{ join(matrix.db, '-') }}/mysql.sock" --mysql-address "tcp-${{ join(matrix.db, '') }}=127.0.0.1:3306"
+        timeout --preserve-status --signal=INT --verbose 30m \
+          pytest --color=yes --capture=no --verbosity 2 --cov-report term --cov-report xml --cov aiomysql --cov tests ./tests $PYTEST_CONNECTION_ARGS
       env:
         PYTHONUNBUFFERED: 1
-      timeout-minutes: 6
+      timeout-minutes: 31
 
     - name: Upload coverage
       uses: codecov/codecov-action@v2.1.0
       with:
         file: ./coverage.xml
-        flags: "${{ matrix.os }}_${{ matrix.py }}_${{ join(matrix.db, '-') }}"
+        flags: "${{ matrix.os }}_${{ matrix.py }}"
         fail_ci_if_error: true
+        verbose: true
