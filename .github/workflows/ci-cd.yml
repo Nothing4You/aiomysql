@@ -603,14 +603,29 @@ jobs:
 
         mysql -h127.0.0.1 -uroot "-p$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL local_infile=on"
 
+    - name: Coverage.py debug info
+      run: coverage debug sys
+
+    - name: pip freeze
+      run: pip freeze
+
     - name: Run tests
       run: |
         # timeout ensures a more or less clean stop by sending a KeyboardInterrupt which will still provide useful logs
         timeout --preserve-status --signal=INT --verbose 5m \
-          pytest --capture=no --verbosity 2 --cov-report term --cov-report xml --cov aiomysql --cov tests ./tests --mysql-unix-socket "unix-${{ join(matrix.db, '') }}=/tmp/run-${{ join(matrix.db, '-') }}/mysql.sock" --mysql-address "tcp-${{ join(matrix.db, '') }}=127.0.0.1:3306"
+          pytest --capture=no --verbosity 2 --cov-report term --cov-report xml --cov-report html:cov_html --cov aiomysql --cov tests ./tests --mysql-unix-socket "unix-${{ join(matrix.db, '') }}=/tmp/run-${{ join(matrix.db, '-') }}/mysql.sock" --mysql-address "tcp-${{ join(matrix.db, '') }}=127.0.0.1:3306"
       env:
         PYTHONUNBUFFERED: 1
       timeout-minutes: 6
+
+    - name: Store the generated coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: "coverage-${{ matrix.os }}_${{ matrix.py }}_${{ join(matrix.db, '-') }}"
+        path: |
+          coverage.xml
+          cov_html
+        retention-days: 30
 
     - name: Upload coverage
       if: ${{ github.event_name != 'schedule' }}
